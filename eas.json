@@ -1,0 +1,43 @@
+{
+  "cli": {
+    "version": ">= 18.0.1",
+    "appVersionSource": "remote"
+  },
+  "build": {
+    "development": {
+      "developmentClient": true,
+      "distribution": "internal"
+    },
+    "preview": {
+      "distribution": "internal",
+      "env": {
+        "EXPO_PUBLIC_SUPABASE_URL": "",
+        "EXPO_PUBLIC_SUPABASE_PUBLISHABLE_KEY": "",
+        "EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID": "",
+        "EXPO_PUBLIC_GOOGLE_IOS_CLIENT_ID": "",
+        "EXPO_PUBLIC_REVENUECAT_IOS_API_KEY": "",
+        "EXPO_PUBLIC_REVENUECAT_ANDROID_API_KEY": "",
+        "EXPO_PUBLIC_SENTRY_DSN": "",
+        "EXPO_PUBLIC_POSTHOG_KEY": "",
+        "EXPO_PUBLIC_POSTHOG_HOST": ""
+      }
+    },
+    "production": {
+      "autoIncrement": true,
+      "env": {
+        "EXPO_PUBLIC_SUPABASE_URL": "",
+        "EXPO_PUBLIC_SUPABASE_PUBLISHABLE_KEY": "",
+        "EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID": "",
+        "EXPO_PUBLIC_GOOGLE_IOS_CLIENT_ID": "",
+        "EXPO_PUBLIC_REVENUECAT_IOS_API_KEY": "",
+        "EXPO_PUBLIC_REVENUECAT_ANDROID_API_KEY": "",
+        "EXPO_PUBLIC_SENTRY_DSN": "",
+        "EXPO_PUBLIC_POSTHOG_KEY": "",
+        "EXPO_PUBLIC_POSTHOG_HOST": ""
+      }
+    }
+  },
+  "submit": {
+    "production": {}
+  }
+}
