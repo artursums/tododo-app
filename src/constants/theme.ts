@@ -8,18 +8,19 @@
 // Light theme colors
 export const LIGHT_COLORS = {
   // Backgrounds
-  bg: '#F7F7FB',
+  bg: '#F8F7F4',
   card: '#FFFFFF',
 
   // Text hierarchy
-  text: '#1B1B2F',
-  textSecondary: '#5B5B72',
-  textMuted: '#9A9AB0',
+  text: '#272637',
+  textSecondary: '#686575',
+  textMuted: '#767381',
 
   // Primary accent — indigo
-  accent: '#6366F1',
-  accentLight: '#E0E1FB',
-  accentDark: '#4F46E5',
+  accent: '#6256C7',
+  accentLight: '#EEEAFB',
+  accentDark: '#5043AE',
+  onAccent: '#FFFFFF',
 
   // Warm secondary accent — coral (used for highlights / CTAs)
   coral: '#FB7185',
@@ -34,19 +35,19 @@ export const LIGHT_COLORS = {
   // Utility
   white: '#FFFFFF',
   black: '#000000',
-  border: '#E7E7F0',
+  border: '#E8E5E1',
   overlay: 'rgba(20, 20, 40, 0.4)',
 
   // Legacy support (keeps ported components that reference these happy)
-  primary: '#6366F1',
-  primaryLight: '#E0E1FB',
+  primary: '#6256C7',
+  primaryLight: '#EEEAFB',
   secondary: '#FB7185',
   secondaryLight: '#FFE4E9',
   bgCard: '#FFFFFF',
   bgElevated: '#FFFFFF',
-  borderLight: '#F0F0F6',
-  borderDark: '#E7E7F0',
-  gray: '#5B5B72',
+  borderLight: '#F1EFEB',
+  borderDark: '#E8E5E1',
+  gray: '#686575',
   success: '#10B981',
   warning: '#F59E0B',
   error: '#EF4444',
@@ -61,12 +62,13 @@ export const DARK_COLORS: typeof LIGHT_COLORS = {
   // Text hierarchy
   text: '#F2F2F7',
   textSecondary: '#A6A6BD',
-  textMuted: '#6E6E86',
+  textMuted: '#A09AAF',
 
   // Primary accent — indigo (brighter for dark)
   accent: '#818CF8',
   accentLight: '#312E81',
   accentDark: '#6366F1',
+  onAccent: '#161323',
 
   // Warm secondary accent — coral
   coral: '#FB7185',

@@ -3,6 +3,7 @@ import { View, Text, Pressable, StyleSheet, LayoutRectangle, useWindowDimensions
 import Animated, { useSharedValue, useAnimatedStyle, withSpring } from 'react-native-reanimated'
 import * as Haptics from 'expo-haptics'
 import type { BottomTabBarProps } from '@react-navigation/bottom-tabs'
+import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { useTheme } from '../contexts/ThemeContext'
 import { RADIUS, SPACING } from '../constants/theme'
 
@@ -10,7 +11,7 @@ const PILL_INSET_X = SPACING.sm
 const PILL_INSET_Y = SPACING.xs - 2
 const SPRING = { damping: 18, stiffness: 180, mass: 1 }
 // Selector tint: ~25% of the accent color (8-digit hex alpha).
-const PILL_ALPHA = '40'
+const PILL_ALPHA = '16'
 
 /**
  * Faithful re-render of the default bottom tab bar with a soft selector pill that
@@ -18,6 +19,7 @@ const PILL_ALPHA = '40'
  */
 export default function AnimatedTabBar({ state, descriptors, navigation }: BottomTabBarProps) {
   const { colors } = useTheme()
+  const insets = useSafeAreaInsets()
   const { width } = useWindowDimensions()
   const [layouts, setLayouts] = useState<Record<number, LayoutRectangle>>({})
 
@@ -49,7 +51,7 @@ export default function AnimatedTabBar({ state, descriptors, navigation }: Botto
       pillW.value = withSpring(w, SPRING)
       pillH.value = withSpring(h, SPRING)
     }
-  }, [active, activeLayout, width])
+  }, [active, activeLayout, width, pillX, pillY, pillW, pillH, ready])
 
   const pillStyle = useAnimatedStyle(() => ({
     transform: [{ translateX: pillX.value }, { translateY: pillY.value }],
@@ -59,7 +61,7 @@ export default function AnimatedTabBar({ state, descriptors, navigation }: Botto
   }))
 
   return (
-    <View style={[styles.container, { backgroundColor: colors.card, borderTopColor: colors.border }]}>
+    <View style={[styles.container, { backgroundColor: colors.card, borderTopColor: colors.border, paddingBottom: Math.max(insets.bottom, 12), height: 64 + Math.max(insets.bottom, 12) }]}>
       <Animated.View
         pointerEvents="none"
         style={[styles.pill, { backgroundColor: colors.accent + PILL_ALPHA }, pillStyle]}
@@ -68,7 +70,7 @@ export default function AnimatedTabBar({ state, descriptors, navigation }: Botto
       {state.routes.map((route, index) => {
         const { options } = descriptors[route.key]
         const focused = state.index === index
-        const color = focused ? colors.text : colors.textMuted
+        const color = focused ? colors.accent : colors.textSecondary
 
         const rawLabel = options.tabBarLabel ?? options.title ?? route.name
         const label = typeof rawLabel === 'string' ? rawLabel : undefined
@@ -86,11 +88,12 @@ export default function AnimatedTabBar({ state, descriptors, navigation }: Botto
             key={route.key}
             style={styles.slot}
             onPress={onPress}
+            onLongPress={() => navigation.emit({ type: 'tabLongPress', target: route.key })}
             onLayout={(e) => {
               const layout = e.nativeEvent.layout
               setLayouts((prev) => ({ ...prev, [index]: layout }))
             }}
-            accessibilityRole="button"
+            accessibilityRole="tab"
             accessibilityState={{ selected: focused }}
             accessibilityLabel={label}
           >
@@ -116,7 +119,7 @@ const styles = StyleSheet.create({
     borderTopWidth: StyleSheet.hairlineWidth,
   },
   slot: { flex: 1, justifyContent: 'center', alignItems: 'center', gap: 4 },
-  label: { fontSize: 11, fontWeight: '500' },
+  label: { fontSize: 11, fontWeight: '600' },
   pill: {
     position: 'absolute',
     left: 0,

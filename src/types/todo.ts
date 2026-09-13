@@ -27,10 +27,13 @@ export interface TodoCategory {
  * with the Supabase wiring (M1/M2); the local model is already shaped for it.
  */
 export interface TodoCalendar {
+  householdId?: string
   id: string
   name: string
   /** Cover tile tint (hex from the app palette). */
   color: string
+  /** Device-local cover filename; not sent to cloud calendar rows. */
+  coverImage?: string
   /** Cover tile glyph. */
   emoji: string
   order: number
@@ -72,16 +75,24 @@ export function makeCalendar(
 }
 
 export interface TodoItem {
+  householdId?: string
   id: string
   title: string
   /** Optional free-text body shown in the editor. */
   notes?: string
+  location?: string
+  url?: string
+  checklist?: { id: string; title: string; completed: boolean }[]
+  /** Undated notes live in Memos, outside the calendar grid. */
+  isMemo?: boolean
   categoryId: string
   /** Owning calendar. Absent on items from before multi-calendar → Personal. */
   calendarId?: string
 
   /** Local calendar day, 'YYYY-MM-DD'. */
   date: string
+  /** Inclusive final day; absent on older, single-day events. */
+  endDate?: string
   allDay: boolean
   /** 'HH:mm' when !allDay. */
   startTime?: string

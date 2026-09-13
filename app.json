@@ -41,7 +41,15 @@
       "expo-font",
       "expo-asset",
       "./plugins/withGoogleModularHeaders",
-      "./plugins/withPodMinDeploymentTarget"
+      "./plugins/withPodMinDeploymentTarget",
+      [
+        "expo-image-picker",
+        {
+          "photosPermission": "Choose a photo for your calendar.",
+          "cameraPermission": false,
+          "microphonePermission": false
+        }
+      ]
     ],
     "extra": {
       "eas": {

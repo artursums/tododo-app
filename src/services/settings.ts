@@ -10,10 +10,16 @@ const ONBOARDING_KEY = 'onboardingComplete'
 
 export interface Settings {
   darkMode: boolean
+  defaultView: 'month' | 'week' | 'year'
+  hideCompleted: boolean
+  defaultReminder: number | null
 }
 
-const DEFAULT_SETTINGS: Settings = {
+export const DEFAULT_SETTINGS: Settings = {
   darkMode: false,
+  defaultView: 'month',
+  hideCompleted: false,
+  defaultReminder: 10,
 }
 
 export async function getSettings(): Promise<Settings> {

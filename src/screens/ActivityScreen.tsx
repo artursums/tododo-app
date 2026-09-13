@@ -1,6 +1,6 @@
 import React, { useCallback, useState } from 'react'
 import { View, Text, StyleSheet, ScrollView } from 'react-native'
-import { Feather } from '@expo/vector-icons'
+import { TododoIcon } from '../components/TododoIcon'
 import { SafeAreaView } from 'react-native-safe-area-context'
 import { useFocusEffect } from '@react-navigation/native'
 
@@ -8,6 +8,7 @@ import { useTheme } from '../contexts/ThemeContext'
 import { useAuth } from '../contexts/AuthContext'
 import { SPACING, RADIUS, TYPOGRAPHY, MEMBER_COLORS } from '../constants/theme'
 import { loadActivity, groupActivity, ActivityGroup, ActivityAction } from '../services/todoActivity'
+import { formatEventDate } from '../utils/todoEvent'
 import { fromDateKey, MONTHS_SHORT } from '../utils/calendarDates'
 
 const WEEKDAYS_SHORT = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat']
@@ -73,7 +74,7 @@ export default function ActivityScreen() {
       {groups.length === 0 ? (
         <View style={styles.empty}>
           <View style={[styles.emptyIcon, { backgroundColor: colors.accent + '14' }]}>
-            <Feather name="bell" size={28} color={colors.accent} />
+            <TododoIcon name="bell" size={28} color={colors.accent} />
           </View>
           <Text style={[styles.emptyTitle, { color: colors.text }]}>No activity yet</Text>
           <Text style={[styles.emptyText, { color: colors.textSecondary }]}>
@@ -105,7 +106,7 @@ export default function ActivityScreen() {
                       {e.itemTitle}
                     </Text>
                     <Text style={[styles.cardDate, { color: colors.textSecondary }]}>
-                      {formatCardDate(e.itemDate, e.itemAllDay, e.itemStartTime, e.itemEndTime)}
+                      {e.itemIsMemo ? 'Memo' : e.itemEndDate && e.itemEndDate !== e.itemDate ? `${formatEventDate(e.itemDate)} – ${formatEventDate(e.itemEndDate)}` : formatCardDate(e.itemDate, e.itemAllDay, e.itemStartTime, e.itemEndTime)}
                     </Text>
                   </View>
                   <View style={[styles.avatar, { backgroundColor: MEMBER_COLORS[0] }]}>
@@ -120,7 +121,7 @@ export default function ActivityScreen() {
                       <Text style={styles.avatarSmText}>{selfInitial}</Text>
                     </View>
                     <Text style={[styles.actionLabel, { color: colors.text }]}>
-                      {ACTION_LABEL[entry.action]}
+                      {entry.itemIsMemo ? ACTION_LABEL[entry.action].replace('Event', 'Memo') : ACTION_LABEL[entry.action]}
                     </Text>
                     <Text style={[styles.actionTime, { color: colors.textMuted }]}>
                       {formatActionTime(entry.at)}

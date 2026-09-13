@@ -1,9 +1,9 @@
 import React, { memo, useEffect, useState } from 'react'
-import { NavigationContainer, DefaultTheme, Theme } from '@react-navigation/native'
+import { NavigationContainer, DefaultTheme, Theme, NavigatorScreenParams } from '@react-navigation/native'
 import { createNativeStackNavigator } from '@react-navigation/native-stack'
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs'
 import * as Linking from 'expo-linking'
-import { Feather } from '@expo/vector-icons'
+import { AnimatedTododoIcon } from '../components/TododoIcon'
 
 import { useTheme } from '../contexts/ThemeContext'
 import { navigationRef } from './navigationRef'
@@ -16,19 +16,21 @@ import AuthScreen from '../screens/AuthScreen'
 import CalendarScreen from '../screens/CalendarScreen'
 import CalendarListScreen from '../screens/CalendarListScreen'
 import ActivityScreen from '../screens/ActivityScreen'
+import HouseholdScreen from '../screens/HouseholdScreen'
+import JoinCalendarScreen from '../screens/JoinCalendarScreen'
 import SettingsScreen from '../screens/SettingsScreen'
 
 export type RootStackParamList = {
   Onboarding: undefined
-  Main: undefined
+  Main: NavigatorScreenParams<MainTabParamList> | undefined
   Auth: undefined
+  Household: undefined
+  Join: { token?: string } | undefined
 }
 
-// TimeTree-style tab set: the calendar itself, the calendar list, the activity
-// feed, settings. (The M0 Household tab folded into the Calendars list — a
-// shared calendar IS the household once the backend wiring lands.)
+// Shared calendar membership is managed in the root People screen.
 export type MainTabParamList = {
-  Calendar: undefined
+  Calendar: { view?: 'month' | 'week' | 'year' | 'memos'; request?: number } | undefined
   Calendars: undefined
   Activity: undefined
   Settings: undefined
@@ -75,22 +77,22 @@ function MainTabs() {
       <Tab.Screen
         name="Calendar"
         component={CalendarTab}
-        options={{ tabBarIcon: ({ color, size }) => <Feather name="calendar" size={size} color={color} /> }}
+        options={{ tabBarIcon: ({ color, size, focused }) => <AnimatedTododoIcon focused={focused} name="calendar" size={size} color={color} /> }}
       />
       <Tab.Screen
         name="Calendars"
         component={CalendarListTab}
-        options={{ tabBarIcon: ({ color, size }) => <Feather name="layers" size={size} color={color} /> }}
+        options={{ tabBarIcon: ({ color, size, focused }) => <AnimatedTododoIcon focused={focused} name="layers" size={size} color={color} /> }}
       />
       <Tab.Screen
         name="Activity"
         component={ActivityTab}
-        options={{ tabBarIcon: ({ color, size }) => <Feather name="bell" size={size} color={color} /> }}
+        options={{ tabBarIcon: ({ color, size, focused }) => <AnimatedTododoIcon focused={focused} name="bell" size={size} color={color} /> }}
       />
       <Tab.Screen
         name="Settings"
         component={SettingsTab}
-        options={{ tabBarIcon: ({ color, size }) => <Feather name="settings" size={size} color={color} /> }}
+        options={{ tabBarIcon: ({ color, size, focused }) => <AnimatedTododoIcon focused={focused} name="settings" size={size} color={color} /> }}
       />
     </Tab.Navigator>
   )
@@ -100,6 +102,7 @@ const linking = {
   prefixes: [Linking.createURL('/'), 'tododo://'],
   config: {
     screens: {
+      Join: 'join',
       Main: {
         screens: {
           Calendar: 'calendar',
@@ -123,6 +126,7 @@ export default function AppNavigator() {
   const handleOnboardingDone = async () => {
     await setOnboardingComplete()
     setOnboarded(true)
+    navigationRef.resetRoot({ index: 0, routes: [{ name: 'Main' }] })
   }
 
   // Themed navigation container so screen backgrounds match the palette.
@@ -144,17 +148,12 @@ export default function AppNavigator() {
 
   return (
     <NavigationContainer ref={navigationRef} theme={navTheme} linking={linking}>
-      <Stack.Navigator screenOptions={{ headerShown: false }}>
-        {!onboarded ? (
-          <Stack.Screen name="Onboarding">
-            {() => <OnboardingScreen onDone={handleOnboardingDone} />}
-          </Stack.Screen>
-        ) : (
-          <>
-            <Stack.Screen name="Main" component={MainTabs} />
-            <Stack.Screen name="Auth" component={AuthScreen} options={{ presentation: 'fullScreenModal' }} />
-          </>
-        )}
+      <Stack.Navigator initialRouteName={onboarded ? 'Main' : 'Onboarding'} screenOptions={{ headerShown: false }}>
+        <Stack.Screen name="Onboarding">{() => <OnboardingScreen onDone={handleOnboardingDone} />}</Stack.Screen>
+        <Stack.Screen name="Main" component={MainTabs} />
+        <Stack.Screen name="Auth" component={AuthScreen} options={{ presentation: 'fullScreenModal' }} />
+        <Stack.Screen name="Household" component={HouseholdScreen} />
+        <Stack.Screen name="Join" component={JoinCalendarScreen} />
       </Stack.Navigator>
     </NavigationContainer>
   )

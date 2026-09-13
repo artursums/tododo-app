@@ -1,4 +1,4 @@
-import { mergeById, rowsToPush } from '../todoMerge'
+import { mergeById, rowsToPush, mergeCalendars } from '../todoMerge'
 
 const row = (id: string, updatedAt: string, extra = '') => ({ id, updatedAt, extra })
 
@@ -28,5 +28,22 @@ describe('todoMerge', () => {
     const remote = [row('a', '2026-06-05T00:00:00Z'), row('b', '2026-06-05T00:00:00Z')]
     const push = rowsToPush(local, remote).map(r => r.id).sort()
     expect(push).toEqual(['a', 'd'])
+  })
+})
+
+
+describe('device-local calendar covers', () => {
+  const calendar = { id: 'family', name: 'Family', color: '#6256C7', emoji: '🏠', order: 0, updatedAt: '2026-09-09T00:00:00Z' }
+
+  it('keeps the local photo when newer cloud calendar metadata arrives', () => {
+    const merged = mergeCalendars([{ ...calendar, coverImage: 'local-photo.jpg' }], [{ ...calendar, name: 'Our family', updatedAt: '2026-09-10T00:00:00Z' }])
+    expect(merged[0].name).toBe('Our family')
+    expect(merged[0].coverImage).toBe('local-photo.jpg')
+  })
+
+  it('does not restore a removed photo or import a remote device path', () => {
+    const remote = { ...calendar, coverImage: 'foreign-photo.jpg', updatedAt: '2026-09-10T00:00:00Z' }
+    expect(mergeCalendars([calendar], [remote])[0].coverImage).toBeUndefined()
+    expect(mergeCalendars([], [remote])[0].coverImage).toBeUndefined()
   })
 })

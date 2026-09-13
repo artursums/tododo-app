@@ -24,7 +24,7 @@ import {
   saveCalendars,
   setLastSync,
 } from './todoStorage'
-import { mergeById, rowsToPush } from './todoMerge'
+import { mergeById, rowsToPush, mergeCalendars } from './todoMerge'
 import { ensureLocalDataOwner } from './todoOwnership'
 
 export { mergeById, rowsToPush } from './todoMerge'
@@ -44,12 +44,17 @@ const ON_CONFLICT = 'user_id,id'
  */
 const toIso = (v: unknown): string => (v ? new Date(v as string).toISOString() : '')
 
-function itemToRow(item: TodoItem, userId: string): ItemRow {
+export function itemToRow(item: TodoItem, userId: string): ItemRow {
   return {
     id: item.id,
     user_id: userId,
     title: item.title,
     notes: item.notes ?? null,
+    end_date: item.endDate ?? item.date,
+    is_memo: item.isMemo ?? false,
+    location: item.location ?? null,
+    url: item.url ?? null,
+    checklist: item.checklist ?? [],
     category_id: item.categoryId,
     calendar_id: item.calendarId ?? null,
     date: item.date,
@@ -65,11 +70,16 @@ function itemToRow(item: TodoItem, userId: string): ItemRow {
   }
 }
 
-function rowToItem(row: any): TodoItem {
+export function rowToItem(row: any): TodoItem {
   return {
     id: row.id,
     title: row.title ?? '',
     notes: row.notes ?? undefined,
+    endDate: row.end_date ?? row.date,
+    isMemo: !!row.is_memo,
+    location: row.location ?? undefined,
+    url: row.url ?? undefined,
+    checklist: Array.isArray(row.checklist) ? row.checklist : [],
     categoryId: row.category_id ?? '',
     calendarId: row.calendar_id ?? undefined,
     date: row.date,
@@ -230,7 +240,7 @@ export async function syncTodos(userId: string): Promise<SyncResult> {
 
     const mergedItems = mergeById(localItems, remoteItems)
     const mergedCats = mergeById(localCats, remoteCats)
-    const mergedCals = mergeById(localCals, remoteCals)
+    const mergedCals = mergeCalendars(localCals, remoteCals)
 
     const pushItems = rowsToPush(localItems, remoteItems)
     const pushCats = rowsToPush(localCats, remoteCats)
@@ -267,7 +277,7 @@ export async function syncTodos(userId: string): Promise<SyncResult> {
     ])
     const finalItems = mergeById(freshItems, mergedItems)
     const finalCats = mergeById(freshCats, mergedCats)
-    const finalCals = mergeById(freshCals, mergedCals)
+    const finalCals = mergeCalendars(freshCals, mergedCals)
 
     await Promise.all([
       saveItems(finalItems),

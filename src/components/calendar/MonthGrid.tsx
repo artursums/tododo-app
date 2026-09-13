@@ -1,4 +1,4 @@
-import React, { useMemo } from 'react'
+import React, { useMemo, useState } from 'react'
 import { View, Text, StyleSheet, Pressable } from 'react-native'
 import * as Haptics from 'expo-haptics'
 import { useTheme } from '../../contexts/ThemeContext'
@@ -20,10 +20,12 @@ interface Props {
   maxChips?: number
   /** Short cells with no event chips — used by the editor's date picker. */
   compact?: boolean
+  /** Fill the available screen height without a scrolling month. */
+  fill?: boolean
 }
 
 /**
- * Month grid (Monday-first, 6 weeks) matching the TimeTree widget's density:
+ * Month grid (Monday-first) matching the TimeTree widget's density:
  * day number + small category-colored event chips. Today is an accent pill,
  * the selected day a soft ring. Completed items render dimmed + struck through.
  */
@@ -35,14 +37,20 @@ export default function MonthGrid({
   selectedKey,
   onSelectDay,
   accent,
-  maxChips = 5,
+  maxChips = 2,
   compact = false,
+  fill = false,
 }: Props) {
   const { colors } = useTheme()
-  const weeks = useMemo(() => buildMonthMatrix(year, monthIndex), [year, monthIndex])
+  const [gridHeight, setGridHeight] = useState(0)
+  const weeks = useMemo(() => buildMonthMatrix(year, monthIndex).filter(week => week.some(day => day.inMonth)), [year, monthIndex])
+
+  const visibleChips = fill && gridHeight > 0
+    ? Math.min(maxChips, Math.max(0, Math.floor((gridHeight / weeks.length - 54) / 16)))
+    : maxChips
 
   return (
-    <View style={styles.wrap}>
+    <View style={[styles.wrap, fill && styles.fill]}>
       <View style={styles.weekdayRow}>
         {WEEKDAY_LABELS.map(d => (
           <Text key={d} style={[styles.weekday, { color: colors.textMuted }]}>
@@ -51,21 +59,24 @@ export default function MonthGrid({
         ))}
       </View>
 
-      <View style={[styles.grid, { borderColor: colors.border }]}>
+      <View onLayout={event => setGridHeight(event.nativeEvent.layout.height)} style={[styles.grid, fill && styles.fill, { borderColor: colors.border }]}>
         {weeks.map((week, wi) => (
-          <View key={wi} style={[styles.week, compact && styles.weekCompact, { borderTopColor: colors.border }]}>
+          <View key={wi} style={[styles.week, compact && styles.weekCompact, fill && styles.weekFill, { borderTopColor: colors.border }]}>
             {week.map(cell => {
               const dayItems = (itemsByDate[cell.key] ?? []).slice()
               const isSelected = cell.key === selectedKey
               const numberColor = !cell.inMonth
                 ? colors.textMuted
                 : cell.isWeekend
-                  ? colors.tint5
+                  ? colors.textSecondary
                   : colors.text
               return (
                 <Pressable
                   key={cell.key}
-                  style={styles.cell}
+                  accessibilityRole="button"
+                  accessibilityLabel={`${cell.key}${cell.isToday ? ', today' : ''}, ${dayItems.length} plans`}
+                  accessibilityState={{ selected: isSelected }}
+                  style={[styles.cell, isSelected && { backgroundColor: colors.accentLight }, !cell.inMonth && { opacity: 0.45 }]}
                   onPress={() => {
                     Haptics.selectionAsync()
                     onSelectDay(cell.key)
@@ -81,7 +92,7 @@ export default function MonthGrid({
                     <Text
                       style={[
                         styles.dayNum,
-                        { color: cell.isToday ? colors.white : numberColor },
+                        { color: cell.isToday ? colors.onAccent : numberColor },
                         cell.isToday && { fontWeight: '700' },
                       ]}
                     >
@@ -90,18 +101,19 @@ export default function MonthGrid({
                   </View>
 
                   <View style={styles.chips}>
-                    {dayItems.slice(0, maxChips).map(it => (
+                    {dayItems.slice(0, visibleChips).map(it => (
                       <View
                         key={it.id}
                         style={[
                           styles.chip,
-                          { backgroundColor: categoryColor(it.categoryId) + (it.completed ? '40' : 'E6') },
+                          { backgroundColor: categoryColor(it.categoryId) + '20', borderLeftColor: categoryColor(it.categoryId), opacity: it.completed ? 0.55 : 1 },
                         ]}
                       >
                         <Text
                           numberOfLines={1}
                           style={[
                             styles.chipText,
+                            { color: colors.text },
                             it.completed && styles.chipTextDone,
                           ]}
                         >
@@ -109,9 +121,9 @@ export default function MonthGrid({
                         </Text>
                       </View>
                     ))}
-                    {dayItems.length > maxChips && (
+                    {dayItems.length > visibleChips && (
                       <Text style={[styles.more, { color: colors.textMuted }]}>
-                        +{dayItems.length - maxChips}
+                        +{dayItems.length - visibleChips}
                       </Text>
                     )}
                   </View>
@@ -126,19 +138,19 @@ export default function MonthGrid({
 }
 
 const styles = StyleSheet.create({
-  wrap: { paddingHorizontal: SPACING.md },
+  wrap: { paddingHorizontal: SPACING.sm, paddingTop: SPACING.md },
   weekdayRow: { flexDirection: 'row', paddingBottom: 6 },
   weekday: { flex: 1, textAlign: 'center', fontSize: 11, fontWeight: '600', letterSpacing: 0.4 },
   grid: { borderTopWidth: StyleSheet.hairlineWidth },
-  // Tall enough for the day number + 5 stacked event bars, kept compact so the
-  // whole month still fits comfortably with room to spare below the grid.
-  week: { flexDirection: 'row', borderTopWidth: StyleSheet.hairlineWidth, minHeight: 114 },
+  fill: { flex: 1, minHeight: 0 },
+  weekFill: { flex: 1, minHeight: 0 },
+  week: { flexDirection: 'row', borderTopWidth: StyleSheet.hairlineWidth, minHeight: 72 },
   weekCompact: { minHeight: 44 },
-  cell: { flex: 1, paddingTop: 4, paddingHorizontal: 2, alignItems: 'center' },
+  cell: { flex: 1, minWidth: 0, overflow: 'hidden', paddingTop: 5, paddingBottom: 5, paddingHorizontal: 2, alignItems: 'center', borderRadius: 10 },
   dayNumWrap: {
-    minWidth: 24,
-    height: 24,
-    borderRadius: 12,
+    minWidth: 28,
+    height: 28,
+    borderRadius: 14,
     borderCurve: 'continuous',
     paddingHorizontal: 4,
     alignItems: 'center',
@@ -150,10 +162,11 @@ const styles = StyleSheet.create({
   chip: {
     borderRadius: 4,
     borderCurve: 'continuous',
-    paddingHorizontal: 4,
+    borderLeftWidth: 2,
+    paddingHorizontal: 3,
     paddingVertical: 1,
   },
   chipText: { fontSize: 9.5, lineHeight: 12, includeFontPadding: false, fontWeight: '600', color: '#FFFFFF' },
-  chipTextDone: { textDecorationLine: 'line-through', color: 'rgba(255,255,255,0.85)' },
+  chipTextDone: { textDecorationLine: 'line-through' },
   more: { fontSize: 9.5, fontWeight: '600', paddingLeft: 4 },
 })

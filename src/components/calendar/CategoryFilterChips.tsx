@@ -1,94 +1,85 @@
-import React from 'react'
+import React, { useState } from 'react'
 import { View, Text, StyleSheet, Pressable, ScrollView } from 'react-native'
-import { Feather } from '@expo/vector-icons'
+import { TododoIcon } from '../../components/TododoIcon'
 import * as Haptics from 'expo-haptics'
 import { useTheme } from '../../contexts/ThemeContext'
-import { SPACING, RADIUS, TYPOGRAPHY } from '../../constants/theme'
 import { TodoCategory } from '../../types/todo'
 
 interface Props {
   categories: TodoCategory[]
-  /** Set of active category ids. Empty set = show all. */
+  /** Empty selection shows every topic. */
   active: Set<string>
   onToggle: (id: string) => void
+  onClear: () => void
 }
 
-/**
- * Horizontal row of toggleable category pills (cf. the "Work" / "Family" chips in
- * the TimeTree reference). A checked pill tints itself with the category color.
- * No selection = everything visible.
- */
-export default function CategoryFilterChips({ categories, active, onToggle }: Props) {
+export default function CategoryFilterChips({ categories, active, onToggle, onClear }: Props) {
   const { colors } = useTheme()
+  const [expanded, setExpanded] = useState(false)
+  const shown = expanded ? categories : categories.slice(0, 3)
+  const hiddenSelected = categories.slice(3).filter(category => active.has(category.id)).length
 
-  return (
-    <ScrollView
-      horizontal
-      showsHorizontalScrollIndicator={false}
-      style={styles.bar}
-      contentContainerStyle={styles.row}
-    >
-      {categories.map(cat => {
-        const on = active.has(cat.id)
+  const chips = (
+    <View style={[styles.chips, expanded && styles.wrapped]}>
+      {shown.map(cat => {
+        const selected = active.has(cat.id)
         return (
           <Pressable
             key={cat.id}
-            onPress={() => {
-              Haptics.selectionAsync()
-              onToggle(cat.id)
-            }}
-            style={[
-              styles.chip,
-              { backgroundColor: on ? cat.color + '26' : colors.card, borderColor: on ? cat.color : colors.border },
-            ]}
+            accessibilityRole="button"
+            accessibilityLabel={`Filter by ${cat.name}`}
+            accessibilityState={{ selected }}
+            onPress={() => { Haptics.selectionAsync(); onToggle(cat.id) }}
+            style={[styles.chip, !expanded && styles.collapsedChip, { backgroundColor: selected ? cat.color + '20' : colors.card, borderColor: selected ? cat.color : colors.border }]}
           >
             <View style={[styles.dot, { backgroundColor: cat.color }]} />
-            <Text
-              style={[styles.label, { color: on ? colors.text : colors.textSecondary }]}
-              numberOfLines={1}
-            >
-              {cat.name}
-            </Text>
-            {on && <Feather name="check" size={13} color={cat.color} style={{ marginLeft: 4 }} />}
+            <Text numberOfLines={1} style={[styles.label, { color: selected ? colors.text : colors.textSecondary }]}>{cat.name}</Text>
+            {selected && <TododoIcon name="check" size={11} color={colors.textSecondary} />}
           </Pressable>
         )
       })}
-    </ScrollView>
+    </View>
+  )
+
+  if (categories.length === 0) return null
+
+  return (
+    <View style={styles.bar}>
+      <View style={styles.row}>
+        {expanded ? <ScrollView style={styles.expandedList} nestedScrollEnabled showsVerticalScrollIndicator>{chips}</ScrollView> : <View style={styles.list}>{chips}</View>}
+        <Pressable
+          accessibilityRole="button"
+          accessibilityLabel={expanded ? 'Collapse topic filters' : `Expand topic filters${hiddenSelected > 0 ? `, ${hiddenSelected} hidden selected` : ''}`}
+          accessibilityState={{ expanded }}
+          onPress={() => setExpanded(value => !value)}
+          style={[styles.expand, { backgroundColor: colors.card, borderColor: colors.border }]}
+        >
+          {!expanded && hiddenSelected > 0 && <Text style={[styles.hiddenCount, { color: colors.accent }]}>{hiddenSelected}</Text>}
+          <TododoIcon name={expanded ? 'chevron-up' : 'chevron-down'} size={16} color={colors.textSecondary} />
+        </Pressable>
+      </View>
+      {expanded && active.size > 0 && (
+        <Pressable accessibilityRole="button" onPress={onClear} style={styles.clear}>
+          <Text style={[styles.clearText, { color: colors.accent }]}>Clear selection</Text>
+        </Pressable>
+      )}
+    </View>
   )
 }
 
 const styles = StyleSheet.create({
-  // A horizontal ScrollView in a flex column expands to fill the available height
-  // unless constrained, which left the bar far too tall (huge gaps above/below the
-  // chips). flexGrow:0 + a fixed height pin the bar so it hugs the pills, identical
-  // in every view.
-  bar: { flexGrow: 0, height: 44 },
-  // alignItems:'center' keeps the pills at their natural height (centered) rather
-  // than stretching to the bar height — so they read the same size everywhere.
-  row: { alignItems: 'center', gap: SPACING.sm, paddingHorizontal: SPACING.lg },
-  chip: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingVertical: 6,
-    paddingHorizontal: 12,
-    borderRadius: RADIUS.full,
-    borderWidth: 1,
-    borderCurve: 'continuous',
-  },
-  dot: { width: 8, height: 8, borderRadius: 4, marginRight: 6 },
-  label: {
-    fontSize: TYPOGRAPHY.caption.size,
-    fontWeight: '600',
-    maxWidth: 120,
-    // An explicit lineHeight (with headroom over the 13px glyph) is required here:
-    // includeFontPadding:false collapses the line box to the bare glyph bounds, which
-    // clipped the bottom of the words. lineHeight restores that vertical space; the
-    // small upward translateY then lifts the glyph (which otherwise sits low on its
-    // baseline) so it reads centred in the chip — safe now that the lineHeight gives
-    // top headroom, so nothing clips.
-    lineHeight: 18,
-    includeFontPadding: false,
-    textAlignVertical: 'center',
-    transform: [{ translateY: -2 }],
-  },
+  bar: { paddingHorizontal: 20, paddingVertical: 4 },
+  row: { flexDirection: 'row', alignItems: 'flex-start', gap: 6 },
+  list: { flex: 1 },
+  expandedList: { flex: 1, maxHeight: 150 },
+  chips: { flexDirection: 'row', gap: 6 },
+  wrapped: { flexWrap: 'wrap', paddingBottom: 2 },
+  chip: { flexDirection: 'row', alignItems: 'center', gap: 5, minHeight: 32, paddingVertical: 6, paddingHorizontal: 9, borderRadius: 10, borderWidth: 1, maxWidth: '100%' },
+  collapsedChip: { flexShrink: 1, minWidth: 0 },
+  dot: { width: 6, height: 6, borderRadius: 3 },
+  label: { fontSize: 11, lineHeight: 16, fontWeight: '600', flexShrink: 1 },
+  expand: { minWidth: 36, minHeight: 34, paddingHorizontal: 6, flexDirection: 'row', gap: 3, alignItems: 'center', justifyContent: 'center', borderRadius: 10, borderWidth: 1 },
+  hiddenCount: { fontSize: 10, fontWeight: '700' },
+  clear: { alignSelf: 'flex-start', paddingVertical: 8 },
+  clearText: { fontSize: 12, fontWeight: '600' },
 })

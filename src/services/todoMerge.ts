@@ -1,3 +1,5 @@
+import type { TodoCalendar } from '../types/todo'
+
 /**
  * Pure last-write-wins merge helpers for To-Do sync (BA-015).
  *
@@ -28,4 +30,10 @@ export function rowsToPush<T extends HasIdAndUpdatedAt>(local: T[], remote: T[])
     const r = remoteMap.get(l.id)
     return !r || l.updatedAt > r.updatedAt
   })
+}
+
+/** Remote metadata must not overwrite a device-local cover or import another device's path. */
+export function mergeCalendars(local: TodoCalendar[], remote: TodoCalendar[]): TodoCalendar[] {
+  const covers = new Map(local.map(calendar => [calendar.id, calendar.coverImage]))
+  return mergeById(local, remote).map(calendar => ({ ...calendar, coverImage: covers.get(calendar.id) }))
 }

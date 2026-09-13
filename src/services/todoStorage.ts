@@ -75,7 +75,7 @@ export async function loadCalendars(): Promise<TodoCalendar[]> {
 }
 
 export const saveCalendars = (cals: TodoCalendar[]): Promise<void> =>
-  setJSON(TODO_CALENDARS_KEY, cals)
+  AsyncStorage.setItem(TODO_CALENDARS_KEY, JSON.stringify(cals))
 
 /** Live (non-tombstoned) calendars in display order. */
 export const visibleCalendars = (cals: TodoCalendar[]): TodoCalendar[] =>
@@ -103,7 +103,7 @@ export async function setActiveCalendarId(id: string): Promise<void> {
 // ---------------------------------------------------------------------------
 export const loadItems = (): Promise<TodoItem[]> => getJSON<TodoItem[]>(TODO_ITEMS_KEY, [])
 
-export const saveItems = (items: TodoItem[]): Promise<void> => setJSON(TODO_ITEMS_KEY, items)
+export const saveItems = (items: TodoItem[]): Promise<void> => AsyncStorage.setItem(TODO_ITEMS_KEY, JSON.stringify(items))
 
 // ---------------------------------------------------------------------------
 // Pure mutation helpers (unit-tested; the screen owns React state)

@@ -5,8 +5,7 @@
  * one-shot date notifications on its own gentle Android channel. The returned id
  * is stored on the item (`reminderNotificationId`) so it can be cancelled/rescheduled.
  *
- * Note: scheduled notifications require a dev-client / production build with
- * expo-notifications — they do not fire in Expo Go.
+ * Local scheduled notifications work in Expo Go as well as native builds.
  */
 import * as Notifications from 'expo-notifications'
 import { Platform } from 'react-native'

@@ -1,6 +1,6 @@
 import React, { useMemo } from 'react'
 import { View, Text, StyleSheet, Pressable } from 'react-native'
-import { Feather } from '@expo/vector-icons'
+import { TododoIcon } from '../../components/TododoIcon'
 import * as Haptics from 'expo-haptics'
 import { useTheme } from '../../contexts/ThemeContext'
 import { SPACING, TYPOGRAPHY } from '../../constants/theme'
@@ -59,7 +59,7 @@ export default function WeekView({ anchor, itemsByDate, categories, accent, onTo
                   <Text
                     style={[
                       styles.dayNum,
-                      { color: d.isToday ? colors.white : d.isWeekend ? colors.tint5 : colors.text },
+                      { color: d.isToday ? colors.onAccent : d.isWeekend ? colors.tint5 : colors.text },
                       d.isToday && { fontWeight: '700' },
                     ]}
                   >
@@ -72,7 +72,7 @@ export default function WeekView({ anchor, itemsByDate, categories, accent, onTo
                   </Text>
                 )}
               </View>
-              <Feather name="plus" size={18} color={accent} />
+              <TododoIcon name="plus" size={18} color={accent} />
             </Pressable>
 
             {items.length === 0 ? (
@@ -83,6 +83,7 @@ export default function WeekView({ anchor, itemsByDate, categories, accent, onTo
                   key={item.id}
                   item={item}
                   color={colorOf(item.categoryId)}
+                  categoryName={categories.find(category => category.id === item.categoryId)?.name}
                   onToggle={() => onToggle(item.id)}
                   onPress={() => onEdit(item)}
                 />

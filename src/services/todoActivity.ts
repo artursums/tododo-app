@@ -24,6 +24,8 @@ export interface ActivityEntry {
   itemTitle: string
   itemDate: string // 'YYYY-MM-DD'
   itemAllDay: boolean
+  itemIsMemo?: boolean
+  itemEndDate?: string
   itemStartTime?: string
   itemEndTime?: string
   /** Category color at action time (drives the card's left bar). */

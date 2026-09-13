@@ -1,4 +1,5 @@
 import React, { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState, ReactNode } from 'react'
+import { useHousehold } from './HouseholdContext'
 import {
   TodoCalendar,
   makeCalendar,
@@ -24,11 +25,11 @@ interface CalendarsContextType {
   /** 'all' or a calendar id. */
   activeCalendarId: string
   setActiveCalendarId: (id: string) => void
-  createCalendar: (name: string, color: string, emoji: string) => TodoCalendar
-  updateCalendar: (cal: TodoCalendar) => void
+  createCalendar: (name: string, color: string, emoji: string, coverImage?: string) => Promise<TodoCalendar>
+  updateCalendar: (cal: TodoCalendar) => Promise<void>
   /** Soft-delete (Personal refuses). Items keep their calendarId; the UI maps
    *  orphans back to Personal. */
-  removeCalendar: (id: string) => void
+  removeCalendar: (id: string) => Promise<void>
   /** Replace state with a cloud-sync merge result. */
   replaceCalendars: (cals: TodoCalendar[]) => void
 }
@@ -36,6 +37,7 @@ interface CalendarsContextType {
 const CalendarsContext = createContext<CalendarsContextType | undefined>(undefined)
 
 export function CalendarsProvider({ children }: { children: ReactNode }) {
+  const shared = useHousehold()
   // Raw list including tombstones (persisted as-is so deletes sync); consumers
   // only ever see the visible projection below.
   const [raw, setRaw] = useState<TodoCalendar[]>([])
@@ -59,9 +61,10 @@ export function CalendarsProvider({ children }: { children: ReactNode }) {
     }
   }, [])
 
-  const persist = useCallback((next: TodoCalendar[]) => {
+  const persist = useCallback(async (next: TodoCalendar[]) => {
+    await saveCalendars(next)
+    rawRef.current = next
     setRaw(next)
-    saveCalendars(next)
   }, [])
 
   const setActiveCalendarId = useCallback((id: string) => {
@@ -70,27 +73,27 @@ export function CalendarsProvider({ children }: { children: ReactNode }) {
   }, [])
 
   const createCalendar = useCallback(
-    (name: string, color: string, emoji: string): TodoCalendar => {
-      const cal = makeCalendar(name, color, emoji, rawRef.current)
-      persist([...rawRef.current, cal])
+    async (name: string, color: string, emoji: string, coverImage?: string): Promise<TodoCalendar> => {
+      const cal = { ...makeCalendar(name, color, emoji, rawRef.current), coverImage }
+      await persist([...rawRef.current, cal])
       return cal
     },
     [persist],
   )
 
   const updateCalendar = useCallback(
-    (cal: TodoCalendar) => {
+    async (cal: TodoCalendar) => {
       const stamped = { ...cal, updatedAt: new Date().toISOString() }
-      persist(rawRef.current.map(c => (c.id === stamped.id ? stamped : c)))
+      await persist(rawRef.current.map(c => (c.id === stamped.id ? stamped : c)))
     },
     [persist],
   )
 
   const removeCalendar = useCallback(
-    (id: string) => {
+    async (id: string) => {
       if (id === PERSONAL_CALENDAR_ID) return
       const ts = new Date().toISOString()
-      persist(rawRef.current.map(c => (c.id === id ? { ...c, deletedAt: ts, updatedAt: ts } : c)))
+      await persist(rawRef.current.map(c => (c.id === id ? { ...c, deletedAt: ts, updatedAt: ts } : c)))
       if (activeCalendarId === id) setActiveCalendarId(ALL_CALENDARS_ID)
     },
     [persist, activeCalendarId, setActiveCalendarId],
@@ -99,16 +102,20 @@ export function CalendarsProvider({ children }: { children: ReactNode }) {
   const replaceCalendars = useCallback(
     (cals: TodoCalendar[]) => {
       setRaw(cals)
-      saveCalendars(cals)
+      saveCalendars(cals).catch(error => console.error('Failed to save synced calendars', error))
       const live = new Set(visibleCalendars(cals).map(c => c.id))
-      if (activeCalendarId !== ALL_CALENDARS_ID && !live.has(activeCalendarId)) {
+      if (activeCalendarId !== ALL_CALENDARS_ID && !live.has(activeCalendarId) && !activeCalendarId.startsWith('shared:')) {
         setActiveCalendarId(ALL_CALENDARS_ID)
       }
     },
     [activeCalendarId, setActiveCalendarId],
   )
 
-  const calendars = useMemo(() => visibleCalendars(raw), [raw])
+  useEffect(() => {
+    if (activeCalendarId.startsWith('shared:') && !shared.isLoading && !shared.calendars.some(c => c.id === activeCalendarId)) setActiveCalendarId(ALL_CALENDARS_ID)
+  }, [activeCalendarId, shared.calendars, shared.isLoading, setActiveCalendarId])
+
+  const calendars = useMemo(() => [...visibleCalendars(raw), ...shared.calendars], [raw, shared.calendars])
 
   const value = useMemo(
     () => ({

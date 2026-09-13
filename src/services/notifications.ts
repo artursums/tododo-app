@@ -3,9 +3,8 @@
  * listener/routing layer arrives in M4; todoReminders.ts only needs the
  * permission gate below.
  *
- * Note: scheduled local notifications require a dev-client / production build —
- * they do not fire in Expo Go (SDK 53+). The calls are safe to make there; they
- * simply resolve without a visible notification.
+ * Local scheduled notifications are supported in Expo Go. Remote push on
+ * Android requires a development/production build (SDK 53+).
  */
 import * as Notifications from 'expo-notifications'
 
